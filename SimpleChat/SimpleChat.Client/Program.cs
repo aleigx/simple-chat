@@ -1,2 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿using SimpleChat.Client;
+
+Client client = new Client("127.0.0.1", "127.0.0.1", "9898");
+await client.RunAsync();

@@ -5,7 +5,7 @@ namespace SimpleChat.Common.Network
     public class Message
     {
         public Header Header { get; private set; }
-        
+
         public string Text
         {
             get => GetText();
@@ -39,19 +39,16 @@ namespace SimpleChat.Common.Network
                     "Message length should be equal to the data length specified in the header");
         }
 
-
-
         private byte[] _text;
 
-        private string GetText()
-        {
-            return Encoding.UTF8.GetString(_text);
-        }
+        private string GetText() => Encoding.UTF8.GetString(_text);
 
         private void SetText(string text)
         {
             _text = Encoding.UTF8.GetBytes(text);
         }
+
+        public override string ToString() => Text;
 
     }
 }

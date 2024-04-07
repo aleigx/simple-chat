@@ -18,7 +18,7 @@ namespace SimpleChat.Server
             _clientRepository = new ClientRepository();
         }
 
-        public async void Start()
+        public async Task StartAsync()
         {
             Console.WriteLine("Starting Server");
             _tcpListener.Start(100);
@@ -114,6 +114,14 @@ namespace SimpleChat.Server
             }
             catch (Exception)
             {
+                if (client != null)
+                {
+                    foreach (var c in _clientRepository.GetAll())
+                    {
+                        if (c.Username != client.Username)
+                            await c.SendAsync(Commands.MESSAGE, client.Username + " disconnected.");
+                    }
+                }
                 tcpClient.Close();
                 _clientRepository.Remove(client);
             }
@@ -125,6 +133,11 @@ namespace SimpleChat.Server
             try
             {
                 _clientRepository.Add(client);
+                await client.SendAsync(Commands.SET_USER_OK, "Server: User correctly set");
+                foreach (var c in _clientRepository.GetAll())
+                {
+                    await c.SendAsync(Commands.MESSAGE, client.Username + " has connected.");
+                }
                 return true;
             }
             catch (UsernameException ex)

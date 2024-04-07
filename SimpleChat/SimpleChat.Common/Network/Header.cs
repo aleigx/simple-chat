@@ -82,7 +82,7 @@ namespace SimpleChat.Common.Network
         {
             var request = new byte[GetLength()];
             Array.Copy(_command, 0, request, 0, CommandLength);
-            Array.Copy(_messageLength, 0, request, CommandLength, MessageLength);
+            Array.Copy(_messageLength, 0, request, CommandLength, Length);
             return request;
         }
     }
