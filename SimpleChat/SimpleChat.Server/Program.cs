@@ -1,4 +1,3 @@
 ﻿using SimpleChat.Server;
-
-Server server = new Server("127.0.0.1", "9898");
+Server server = new Server("0.0.0.0", 9898);
 await server.StartAsync();

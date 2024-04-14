@@ -11,9 +11,9 @@ namespace SimpleChat.Server
         private bool _run;
         private ClientRepository _clientRepository;
 
-        public Server(string ip, string port)
+        public Server(string ip, int port)
         {
-            var endpoint = new IPEndPoint(IPAddress.Parse(ip), int.Parse(port));
+            var endpoint = new IPEndPoint(IPAddress.Parse(ip), port);
             _tcpListener = new TcpListener(endpoint);
             _clientRepository = new ClientRepository();
         }
@@ -23,21 +23,7 @@ namespace SimpleChat.Server
             Console.WriteLine("Starting Server");
             _tcpListener.Start(100);
             _run = true;
-            Task.Run(async () => await ListenForConnectionsAsync());
-            while (_run)
-            {
-                Console.WriteLine("Enter :q to exit server.");
-                var input = Console.ReadLine();
-                if (input == ":q")
-                {
-                    await Shutdown();
-                    _run = false;
-                }
-                else
-                {
-                    Console.WriteLine("Invalid input.");
-                }
-            }
+            await Task.Run(async () => await ListenForConnectionsAsync());
         }
 
         private async Task ListenForConnectionsAsync()
@@ -47,12 +33,15 @@ namespace SimpleChat.Server
                 try
                 {
                     var tcpClient = await _tcpListener.AcceptTcpClientAsync();
-                    Console.WriteLine("New connection");
+                    var clientIp = ((IPEndPoint)tcpClient.Client.RemoteEndPoint).Address;
+                    var clientPort = ((IPEndPoint)tcpClient.Client.RemoteEndPoint).Port;
+                    Console.WriteLine("New connection, " + clientIp + ":" + clientPort);
                     Task.Run(async () => await HandleClientAsync(tcpClient));
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.Message);
+                    Console.WriteLine("Exception: " + ex.Message);
+                    Console.WriteLine(ex.StackTrace);
                     _run = false;
                 }
             }
@@ -106,14 +95,17 @@ namespace SimpleChat.Server
 
                     foreach (var c in _clientRepository.GetAll())
                     {
+                        Console.WriteLine("Entro aca???????? " + c.Username + " " + client.Username);
                         string messageToSend = client.Username + ": " + message.Text;
                         if (c.Username != client.Username) await c.SendAsync(Commands.MESSAGE, messageToSend);
                     }
                 }
 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine("Exception: " + ex.Message);
+                Console.WriteLine(ex.StackTrace);
                 if (client != null)
                 {
                     foreach (var c in _clientRepository.GetAll())
@@ -142,11 +134,15 @@ namespace SimpleChat.Server
             }
             catch (UsernameException ex)
             {
+                Console.WriteLine("Exception: " + ex.Message);
+                Console.WriteLine(ex.StackTrace);
                 await client.SendAsync(Commands.SET_USER_FAIL, "Server: " + ex.Message);
                 return false;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine("Exception: " + ex.Message);
+                Console.WriteLine(ex.StackTrace);
                 await client.SendAsync(Commands.ERROR, "Server: Unknown error, try again later");
                 return false;
             }

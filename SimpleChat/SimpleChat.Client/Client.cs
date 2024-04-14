@@ -7,17 +7,22 @@ namespace SimpleChat.Client
     internal class Client
     {
         private TcpClient _tcpClient;
-        private IPEndPoint _serverEndpoint;
+        private string _username;
         private bool _run;
+
+        private string _serverHostname;
+        private int _serverPort;
 
         private MessageReceiver _receiver;
         private MessageSender _sender;
 
-        public Client(string clientIp, string serverIp, string serverPort)
+        public Client(string clientIp, string serverHostname, int serverPort, string username)
         {
             IPEndPoint clientEndpoint = new IPEndPoint(IPAddress.Parse(clientIp), 0);
+            _username = username;
             _tcpClient = new TcpClient(clientEndpoint);
-            _serverEndpoint = new IPEndPoint(IPAddress.Parse(serverIp), int.Parse(serverPort));
+            _serverHostname = serverHostname;
+            _serverPort = serverPort;
         }
 
         public async Task RunAsync()
@@ -27,6 +32,7 @@ namespace SimpleChat.Client
             {
                 await ConnectToServerAsync();
                 await SetUsernameAsync();
+                Console.WriteLine("You can type :q anytime to close the app.");
                 HandleMessages();
             }
             catch (Exception ex)
@@ -39,7 +45,7 @@ namespace SimpleChat.Client
 
         private async Task ConnectToServerAsync()
         {
-            await _tcpClient.ConnectAsync(_serverEndpoint);
+            await _tcpClient.ConnectAsync(_serverHostname, _serverPort);
             _receiver = new MessageReceiver(_tcpClient);
             _sender = new MessageSender(_tcpClient);
         }
@@ -52,24 +58,13 @@ namespace SimpleChat.Client
 
         private async Task SetUsernameAsync()
         {
-            Commands usernameResponse = Commands.SET_USER_FAIL;
-            string username = "";
-            Console.WriteLine("Enter an username. You can stop the program anytime entering :q");
-            while (usernameResponse != Commands.SET_USER_OK && _run)
+            Header header = new Header(Commands.SET_USER, _username);
+            var userMessage = new Message(header, _username);
+            await _sender.SendAsync(userMessage);
+            var response = await _receiver.GetAsync();
+            if (response.Header.Command != Commands.SET_USER_OK)
             {
-                Console.Write("Username: ");
-                username = Console.ReadLine();
-                if (username == ":q")
-                {
-                    _run = false;
-                    break;
-                }
-                Header header = new Header(Commands.SET_USER, username);
-                var userMessage = new Message(header, username);
-                await _sender.SendAsync(userMessage);
-                var response = await _receiver.GetAsync();
-                usernameResponse = response.Header.Command;
-                Console.WriteLine(response);
+                throw new Exception(response.Text);
             }
         }
 
